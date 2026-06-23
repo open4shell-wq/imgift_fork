@@ -38,3 +38,4 @@ If you're on macOS, you need to install libpng using [Homebrew](https://brew.sh/
 
 imgify is distributed under a GPL V2 licence. See the LICENSE file for more information.
 # imgift_fork
+# imgift_fork
