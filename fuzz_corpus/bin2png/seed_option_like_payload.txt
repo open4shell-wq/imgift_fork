@@ -1,0 +1,5 @@
+--input
+--output
+--pad-byte
+0xff
+payload that looks like options but is only file content

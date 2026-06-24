@@ -1,0 +1,3 @@
+The quick brown fox jumps over the lazy dog.
+imgify stores bytes in RGB pixels and pads the final pixel when needed.
+This seed is intentionally longer than one row-sized toy sample.
