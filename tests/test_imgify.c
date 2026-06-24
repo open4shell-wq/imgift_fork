@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "../imgify.h"
@@ -179,6 +180,28 @@ static void test_png_load_rejects_non_png_file(void) {
 	unlink(filename);
 }
 
+static void test_png_load_rejects_missing_file(void) {
+	int saved_stderr = dup(STDERR_FILENO);
+	int devnull = open("/dev/null", O_WRONLY);
+	if (saved_stderr == -1 || devnull == -1 || dup2(devnull, STDERR_FILENO) == -1) {
+		perror("redirect stderr");
+		exit(EXIT_FAILURE);
+	}
+
+	uint8_t *output = NULL;
+	bool ok = png_load("/tmp/imgify-test-missing-png-file", &output, NULL, NULL, NULL, NULL, NULL);
+
+	if (dup2(saved_stderr, STDERR_FILENO) == -1) {
+		perror("restore stderr");
+		exit(EXIT_FAILURE);
+	}
+	close(saved_stderr);
+	close(devnull);
+
+	ASSERT_FALSE(ok);
+	ASSERT_TRUE(output == NULL);
+}
+
 static void test_png_save_rejects_unknown_channel_count(void) {
 	char filename[] = "/tmp/imgify-test-imgify-XXXXXX";
 	make_temp_filename(filename);
@@ -206,11 +229,46 @@ static void test_png_save_rejects_unknown_channel_count(void) {
 	unlink(filename);
 }
 
+static void test_png_save_rejects_unwritable_output(void) {
+	char dirname[] = "/tmp/imgify-test-imgify-dir-XXXXXX";
+	make_temp_filename(dirname);
+	unlink(dirname);
+	if (mkdir(dirname, 0700) == -1) {
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
+
+	uint8_t input[] = { 0x00, 0x01, 0x02, 0x03 };
+
+	int saved_stderr = dup(STDERR_FILENO);
+	int devnull = open("/dev/null", O_WRONLY);
+	if (saved_stderr == -1 || devnull == -1 || dup2(devnull, STDERR_FILENO) == -1) {
+		perror("redirect stderr");
+		rmdir(dirname);
+		exit(EXIT_FAILURE);
+	}
+
+	bool ok = png_save(dirname, input, 1, 1, 4, 0, 0xff, sizeof(input));
+
+	if (dup2(saved_stderr, STDERR_FILENO) == -1) {
+		perror("restore stderr");
+		rmdir(dirname);
+		exit(EXIT_FAILURE);
+	}
+	close(saved_stderr);
+	close(devnull);
+
+	ASSERT_FALSE(ok);
+	rmdir(dirname);
+}
+
 int main(void) {
 	test_png_round_trip_preserves_original_size_and_padding();
 	test_png_round_trip_without_padding_uses_full_image_size();
 	test_png_round_trip_rgb_without_padding();
 	test_png_load_rejects_non_png_file();
+	test_png_load_rejects_missing_file();
 	test_png_save_rejects_unknown_channel_count();
+	test_png_save_rejects_unwritable_output();
 	return EXIT_SUCCESS;
 }

@@ -5,7 +5,7 @@ CC ?= cc
 all: bin2png png2bin
 
 clean:
-	@rm -rf *.o bin2png png2bin tests/*.o tests/test_common tests/test_common_options tests/test_imgify
+	@rm -rf *.o *.gcda *.gcno bin2png png2bin tests/*.o tests/*.gcda tests/*.gcno tests/test_common tests/test_common_options tests/test_imgify
 
 CFLAGS += -D_XOPEN_SOURCE=600 -std=c99 -Wall -Wextra
 LDFLAGS += -lpng
@@ -14,11 +14,11 @@ ifeq ($(PLATFORM_OS), Linux)
 	LDFLAGS += -lm # required for sqrt()
 endif
 
-common.o: common.h
+common.o: common.c common.h
 	echo $(PLATFORM_OS)
 	$(CC) -o $@ -c common.c $(CFLAGS)
 
-imgify.o: imgify.h
+imgify.o: imgify.c imgify.h
 	$(CC) -o $@ -c imgify.c $(CFLAGS)
 
 bin2png: common.o imgify.o
@@ -36,7 +36,11 @@ tests/test_common_options: tests/test_common_options.c
 tests/test_imgify: tests/test_imgify.c imgify.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
-test: tests/test_common tests/test_common_options tests/test_imgify bin2png png2bin
+TEST_TARGETS := tests/test_common tests/test_common_options tests/test_imgify bin2png png2bin
+
+test:
+	$(MAKE) clean
+	$(MAKE) $(TEST_TARGETS)
 	./tests/test_common
 	./tests/test_common_options
 	./tests/test_imgify

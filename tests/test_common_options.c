@@ -154,6 +154,11 @@ static void test_parse_options_rejects_padding_byte_above_byte_range(void) {
 	assert_parse_options_exits_failure(argv);
 }
 
+static void test_parse_options_rejects_padding_byte_overflow(void) {
+	char *argv[] = { "test-options", "-i", "input.bin", "-o", "output.png", "-p", "999999999999999999999999999999999999999999", NULL };
+	assert_parse_options_exits_failure(argv);
+}
+
 static void test_parse_options_rejects_unknown_option(void) {
 	char *argv[] = { "test-options", "--unknown-option", NULL };
 	assert_parse_options_exits_failure(argv);
@@ -181,6 +186,7 @@ int main(void) {
 	test_parse_options_accepts_max_padding_byte();
 	test_parse_options_allows_missing_required_values_for_main_to_validate();
 	test_parse_options_rejects_padding_byte_above_byte_range();
+	test_parse_options_rejects_padding_byte_overflow();
 	test_parse_options_rejects_unknown_option();
 	test_parse_options_help_exits_success();
 	test_parse_options_version_exits_success();
