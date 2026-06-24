@@ -1,8 +1,10 @@
 #include "../common.h"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define ASSERT_EQ_SIZE(expected, actual) do { \
@@ -35,7 +37,37 @@ static void test_fsize_reports_file_size(void) {
 	unlink(filename);
 }
 
+static void test_fsize_exits_for_missing_file(void) {
+	pid_t pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pid == 0) {
+		int devnull = open("/dev/null", O_WRONLY);
+		if (devnull != -1) {
+			dup2(devnull, STDERR_FILENO);
+			close(devnull);
+		}
+		(void) fsize("/tmp/imgify-test-common-missing-file");
+		exit(EXIT_SUCCESS);
+	}
+
+	int status;
+	if (waitpid(pid, &status, 0) == -1) {
+		perror("waitpid");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != EXIT_FAILURE) {
+		fprintf(stderr, "%s:%d: fsize should exit with failure for missing files\n", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+}
+
 int main(void) {
 	test_fsize_reports_file_size();
+	test_fsize_exits_for_missing_file();
 	return EXIT_SUCCESS;
 }

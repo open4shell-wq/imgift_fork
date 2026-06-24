@@ -1,10 +1,11 @@
-#include "../imgify.h"
-
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "../imgify.h"
 
 #define ASSERT_TRUE(condition) do { \
 	if (!(condition)) { \
@@ -111,6 +112,73 @@ static void test_png_round_trip_without_padding_uses_full_image_size(void) {
 	unlink(filename);
 }
 
+static void test_png_round_trip_rgb_without_padding(void) {
+	char filename[] = "/tmp/imgify-test-imgify-XXXXXX";
+	make_temp_filename(filename);
+
+	uint8_t input[] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04 };
+	const size_t original_size = sizeof(input);
+
+	ASSERT_TRUE(png_save(filename, input, 2, 1, 3, 0, 0xff, original_size));
+
+	uint8_t *output = NULL;
+	size_t output_size = 0;
+	uint32_t output_width = 0;
+	uint32_t output_height = 0;
+	uint8_t output_channels = 0;
+	uint32_t output_padding = 99;
+
+	ASSERT_TRUE(png_load(filename, &output, &output_size, &output_width, &output_height, &output_channels, &output_padding));
+
+	ASSERT_EQ_SIZE(original_size, output_size);
+	ASSERT_EQ_U32(2, output_width);
+	ASSERT_EQ_U32(1, output_height);
+	ASSERT_EQ_U8(3, output_channels);
+	ASSERT_EQ_U32(0, output_padding);
+	ASSERT_TRUE(memcmp(input, output, original_size) == 0);
+
+	free(output);
+	unlink(filename);
+}
+
+static void test_png_load_rejects_non_png_file(void) {
+	char filename[] = "/tmp/imgify-test-imgify-XXXXXX";
+	make_temp_filename(filename);
+
+	FILE *fp = fopen(filename, "wb");
+	if (fp == NULL) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
+	fputs("not a png", fp);
+	fclose(fp);
+
+	uint8_t *output = NULL;
+	size_t output_size = 123;
+
+	int saved_stderr = dup(STDERR_FILENO);
+	int devnull = open("/dev/null", O_WRONLY);
+	if (saved_stderr == -1 || devnull == -1 || dup2(devnull, STDERR_FILENO) == -1) {
+		perror("redirect stderr");
+		exit(EXIT_FAILURE);
+	}
+
+	bool ok = png_load(filename, &output, &output_size, NULL, NULL, NULL, NULL);
+
+	if (dup2(saved_stderr, STDERR_FILENO) == -1) {
+		perror("restore stderr");
+		exit(EXIT_FAILURE);
+	}
+	close(saved_stderr);
+	close(devnull);
+
+	ASSERT_FALSE(ok);
+	ASSERT_TRUE(output == NULL);
+	ASSERT_EQ_SIZE(123, output_size);
+
+	unlink(filename);
+}
+
 static void test_png_save_rejects_unknown_channel_count(void) {
 	char filename[] = "/tmp/imgify-test-imgify-XXXXXX";
 	make_temp_filename(filename);
@@ -141,6 +209,8 @@ static void test_png_save_rejects_unknown_channel_count(void) {
 int main(void) {
 	test_png_round_trip_preserves_original_size_and_padding();
 	test_png_round_trip_without_padding_uses_full_image_size();
+	test_png_round_trip_rgb_without_padding();
+	test_png_load_rejects_non_png_file();
 	test_png_save_rejects_unknown_channel_count();
 	return EXIT_SUCCESS;
 }

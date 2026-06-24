@@ -33,8 +33,6 @@
 #include "version.h"
 
 static void do_work(const options_t *options, void *data, size_t filesize) {
-	(void)data;
-
 	uint8_t *buffer;
 	size_t buffer_size;
 	uint32_t width;

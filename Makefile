@@ -36,9 +36,10 @@ tests/test_common_options: tests/test_common_options.c
 tests/test_imgify: tests/test_imgify.c imgify.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
-test: tests/test_common tests/test_common_options tests/test_imgify
+test: tests/test_common tests/test_common_options tests/test_imgify bin2png png2bin
 	./tests/test_common
 	./tests/test_common_options
 	./tests/test_imgify
+	sh ./tests/test_cli.sh
 
 .PHONY: all clean test
