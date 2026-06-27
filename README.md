@@ -19,6 +19,7 @@ Install `libpng`:
 	git clone https://github.com/jweyrich/imgify.git
 	cd imgify
 	make
+	make test
 
 If you're on macOS, you need to install libpng using [Homebrew](https://brew.sh/) and run `make` using some extra flags. Example:
 
