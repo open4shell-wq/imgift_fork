@@ -21,6 +21,10 @@ Install `libpng`:
 	make
 	make test
 
+To collect GCC/lcov coverage:
+
+	make coverage COVERAGE_CC=gcc-13 COVERAGE_GCOV=gcov-13
+
 If you're on macOS, you need to install libpng using [Homebrew](https://brew.sh/) and run `make` using some extra flags. Example:
 
 	CFLAGS="-I$(libpng-config --prefix)/include" LDFLAGS="-L$(libpng-config --prefix)/lib" make

@@ -1,0 +1,7 @@
+*.o
+bin2png
+png2bin
+*.gcda
+*.gcno
+*.gcov
+*.info

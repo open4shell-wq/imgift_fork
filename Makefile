@@ -1,26 +1,20 @@
-CC = clang
+CC ?= clang
 BINARIES = bin2png png2bin
 OBJECTS = common.o imgify.o
+
 
 # cut is necessary for Cygwin
 PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
-.PHONY: all clean test
+.PHONY: all clean test coverage
 
 all: $(BINARIES)
 
 clean:
-	@rm -rf *.o $(BINARIES)
+	@rm -rf *.o $(BINARIES) *.gcda *.gcno *.gcov $(COVERAGE_INFO)
 
 test: all
 	sh tests/run.sh
-
-CFLAGS += -D_XOPEN_SOURCE=600 -std=c99 -Wall -Wextra
-LDFLAGS += -lpng
-
-ifeq ($(PLATFORM_OS), Linux)
-	LDFLAGS += -lm # required for sqrt()
-endif
 
 common.o: common.c common.h
 	$(CC) -o $@ -c common.c $(CFLAGS)

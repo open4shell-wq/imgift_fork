@@ -33,6 +33,28 @@ afl-showmap -o /tmp/imgify.map -- \
 If the binary is not instrumented, `afl-showmap` will report that no
 instrumentation was detected.
 
+## Clean the input corpus
+
+AFL++ does a dry run over every file from `-i` before real fuzzing. Crashes in
+that dry-run corpus are known pre-existing crashes, so AFL++ may print
+`results in a crash, skipping` but not count them as `saved crashes`.
+
+Keep crashing files out of the normal input corpus and store them separately as
+known reproducers:
+
+```sh
+mkdir -p fuzz_corpus_known_crashes/png2bin
+for f in fuzz_corpus/png2bin/pngsuite/*.png; do
+  if ! ./png2bin -i "$f" -o /tmp/imgify-dryrun.bin >/tmp/imgify-dryrun.log 2>&1; then
+    mv "$f" fuzz_corpus_known_crashes/png2bin/
+  fi
+done
+```
+
+With ASAN/UBSAN builds, a non-zero exit here usually means the seed already
+triggers a sanitizer abort. Triage those files separately before using the
+remaining corpus with `afl-fuzz`.
+
 ## Run fuzzing
 
 Fuzz PNG decoding:
